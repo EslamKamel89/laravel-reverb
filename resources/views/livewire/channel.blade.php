@@ -1,11 +1,14 @@
 <?php
 
+use App\Models\Channel;
+
 use function Livewire\Volt\mount;
 use function Livewire\Volt\state;
 
-state(['channel', 'messages', 'subscribed']);
+state(['channel', 'channelId', 'messages', 'subscribed']);
 
-mount(function ($channel) {
+mount(function (Channel $channel) {
+    $this->channelId = $this->channel->id;
     $this->messages = $this->channel->getMessages()->toArray();
     $this->subscribed = $this->channel->isSubscribed(auth()->user());
 });
@@ -16,19 +19,9 @@ $send = fn (string $message) => $this->channel->send(auth()->user(), $message);
 
 ?>
 
-<div
-    x-data="channel"
-    class="flex h-full w-full flex-col justify-between p-4 pb-2"
-    style="height: calc(100vh - 100px)"
->
-    <div
-        class="messages mb-4 flex h-full grow flex-col overflow-y-scroll"
-        x-ref="messages"
-    >
-        <span
-            class="mt-auto w-full py-4 text-center text-lg"
-            :class="{ 'mb-4 border-b': $wire.messages.length > 0 }"
-        >
+<div x-data="channel" class="flex flex-col justify-between w-full h-full p-4 pb-2" style="height: calc(100vh - 100px)">
+    <div class="flex flex-col h-full mb-4 overflow-y-scroll messages grow" x-ref="messages">
+        <span class="w-full py-4 mt-auto text-lg text-center" :class="{ 'mb-4 border-b': $wire.messages.length > 0 }">
             This is the very beginning of the
             <strong>{{ $channel->name }}</strong>
             channel.
@@ -36,23 +29,13 @@ $send = fn (string $message) => $this->channel->send(auth()->user(), $message);
 
         <template x-for="message in $wire.messages">
             <div class="flex gap-x-2">
-                <img
-                    :src="message.user.avatar"
-                    :alt="message.user.name"
-                    class="h-10 w-10 rounded-md"
-                />
+                <img :src="message.user.avatar" :alt="message.user.name" class="w-10 h-10 rounded-md" />
 
                 <div>
                     <div class="flex items-center gap-x-2">
-                        <span
-                            class="text-lg font-bold"
-                            x-text="message.user.name"
-                        ></span>
+                        <span class="text-lg font-bold" x-text="message.user.name"></span>
 
-                        <time
-                            class="text-sm text-gray-600"
-                            x-text="message.sent_at"
-                        ></time>
+                        <time class="text-sm text-gray-600" x-text="message.sent_at"></time>
                     </div>
 
                     <div x-html="message.content" class="text-lg"></div>
@@ -61,31 +44,24 @@ $send = fn (string $message) => $this->channel->send(auth()->user(), $message);
         </template>
     </div>
 
-    <div
-        class="flex w-full"
-        @submitted.stop="send($event.detail.message)"
-    >
+    <div class="flex w-full" @submitted.stop="send($event.detail.message)">
         @if ($subscribed)
-            <div class="flex w-full flex-col gap-y-1">
-                <x-editor channel="{{ $channel->name }}" />
+        <div class="flex flex-col w-full gap-y-1">
+            <x-editor channel="{{ $channel->name }}" />
 
-                <!-- Typing Indicator -->
-                <span class="block shrink-0 text-xs text-gray-500 after:content-['\200b']"></span>
-            </div>
+            <!-- Typing Indicator -->
+            <span class="block shrink-0 text-xs text-gray-500 after:content-['\200b']"></span>
+        </div>
         @else
-            <div class="flex flex flex-grow flex-col items-center justify-center gap-y-4 rounded-md border bg-gray-100 p-6">
-                <span class="text-lg font-bold">
-                    #{{ $channel->name }}
-                </span>
+        <div class="flex flex-col items-center justify-center flex-grow p-6 bg-gray-100 border rounded-md gap-y-4">
+            <span class="text-lg font-bold">
+                #{{ $channel->name }}
+            </span>
 
-                <button
-                    type="submit"
-                    class="rounded-md bg-green-800 px-4 py-2 text-base text-white"
-                    wire:click="join"
-                >
-                    Join channel
-                </button>
-            </div>
+            <button type="submit" class="px-4 py-2 text-base text-white bg-green-800 rounded-md" wire:click="join">
+                Join channel
+            </button>
+        </div>
         @endif
     </div>
 </div>
@@ -102,6 +78,11 @@ Alpine.data('channel', () => {
 
         init() {
             this.scrollPosition()
+            this.channel = Echo.channel('channels.' + this.$wire.channelId);
+            this.channel.listen('MessageSent', (event) => {
+                pr(event, 'MessageSent event received')
+                this.$wire.messages.push(event.message);
+            })
         },
 
         send(message) {
