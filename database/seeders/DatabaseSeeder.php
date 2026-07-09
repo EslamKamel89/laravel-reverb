@@ -13,6 +13,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        User::factory()->create([
+            'name' => 'admin',
+            'email' => 'admin@gmail.com',
+            'password' => 'password',
+        ]);
         User::factory(10)->create();
 
         $channels = collect(['general', 'laravel', 'reverb', 'echo', 'livewire']);
