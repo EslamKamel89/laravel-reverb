@@ -78,7 +78,7 @@ Alpine.data('channel', () => {
 
         init() {
             this.scrollPosition()
-            this.channel = Echo.channel('channels.' + this.$wire.channelId);
+            this.channel = Echo.private('channels.' + this.$wire.channelId);
             this.channel.listen('MessageSent', (event) => {
                 pr(event, 'MessageSent event received')
                 this.$wire.messages.push(event.message);

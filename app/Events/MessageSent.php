@@ -3,7 +3,7 @@
 namespace App\Events;
 
 use App\Models\Message;
-use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -24,7 +24,7 @@ class MessageSent implements ShouldBroadcastNow, ShouldQueue
     public function broadcastOn()
     {
         return [
-            new Channel('channels.'.$this->message->channel_id),
+            new PrivateChannel('channels.'.$this->message->channel_id),
         ];
     }
 }
