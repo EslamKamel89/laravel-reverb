@@ -11,3 +11,7 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 Broadcast::channel('channels.{channel}', function (User $user, Channel $channel) {
     return $channel->isSubscribed($user);
 });
+
+Broadcast::channel('workspace', function (User $user) {
+    return ['id' => $user->id, 'name' => $user->name];
+});
