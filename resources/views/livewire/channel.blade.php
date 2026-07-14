@@ -44,13 +44,13 @@ $send = fn (string $message) => $this->channel->send(auth()->user(), $message);
         </template>
     </div>
 
-    <div class="flex w-full" @submitted.stop="send($event.detail.message)">
+    <div class="flex w-full" @submitted.stop="send($event.detail.message)" @typing.stop="typing">
         @if ($subscribed)
         <div class="flex flex-col w-full gap-y-1">
             <x-editor channel="{{ $channel->name }}" />
 
             <!-- Typing Indicator -->
-            <span class="block shrink-0 text-xs text-gray-500 after:content-['\200b']"></span>
+            <span class="block shrink-0 text-xs text-gray-500 after:content-['\200b']" x-text="typingUsers()"></span>
         </div>
         @else
         <div class="flex flex-col items-center justify-center flex-grow p-6 bg-gray-100 border rounded-md gap-y-4">
@@ -83,18 +83,67 @@ Alpine.data('channel', () => {
                 pr(event, 'MessageSent event received')
                 this.$wire.messages.push(event.message);
             })
+            this.channel.listenForWhisper('StartTyping', (event) => {
+                pr(event, 'StartTyping');
+                this.usersTyping.push(event);
+            })
+            this.channel.listenForWhisper('StopTyping', (event) => {
+                pr(event, 'StopTyping');
+                this.usersTyping = this.usersTyping.filter((user) => user.id !== event.id)
+            })
         },
 
         send(message) {
             this.$wire.send(message)
         },
-
+        typing(event) {
+            this.debounce(
+                () => {
+                    this.channel.whisper('StartTyping', {
+                        id: '{{ auth()->id() }}',
+                        name: '{{ auth()->user()->name }}'
+                    });
+                },
+                () => {
+                    this.channel.whisper('StopTyping', {
+                        id: '{{ auth()->id() }}',
+                        name: '{{ auth()->user()->name }}'
+                    });
+                }
+            )
+        },
         scrollPosition() {
             this.$watch('$wire.messages', () => {
                 this.$refs.messages.scrollTop =
                     this.$refs.messages.scrollHeight;
             });
         },
+        debouncer: null,
+        debounce(startCallback, stopCallback) {
+            if (this.debouncer) {
+                clearTimeout(this.debouncer);
+            }
+            this.debouncer = setTimeout(() => {
+                this.isTyping = false;
+                stopCallback()
+            }, 2000)
+            if (!this.isTyping) {
+                this.isTyping = true;
+                startCallback()
+            }
+        },
+        typingUsers() {
+            switch (this.usersTyping.length) {
+                case 0:
+                    return '';
+                case 1:
+                    return `${this.usersTyping[0].name} is typing......`;
+                case 2:
+                    return `${this.usersTyping[0].name} and ${this.usersTyping[1].name} are typing......`;
+                default:
+                    return 'Several users are typing......'
+            }
+        }
     }
 })
 </script>
