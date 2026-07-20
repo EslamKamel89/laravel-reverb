@@ -3,15 +3,18 @@
 namespace App\Models;
 
 use App\Events\MessageSent;
+use Illuminate\Broadcasting\PresenceChannel;
+use Illuminate\Database\Eloquent\BroadcastsEvents;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Broadcast;
 
 class Channel extends Model
 {
-    use HasFactory;
+    use BroadcastsEvents , HasFactory;
 
     /**
      * The attributes that aren't mass assignable.
@@ -83,7 +86,20 @@ class Channel extends Model
             'content' => $message,
             'sent_at' => now(),
         ]);
-
+        // change the broadcasting to anonyms broadcasting which don't require creating an event
+        // Broadcast::private('channels.'.$this->id)
+        //     ->as('App\\Events\\MessageSent')
+        //     ->with([
+        //         'message' => $message->load('user'),
+        //     ])->send();
         MessageSent::dispatch($message);
+    }
+
+    public function broadcastOn(string $event)
+    {
+        return match ($event) {
+            'created' => new PresenceChannel('workspace') ,
+            'default' => [],
+        };
     }
 }

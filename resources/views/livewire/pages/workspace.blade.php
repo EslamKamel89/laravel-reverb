@@ -21,10 +21,7 @@ $createChannel = fn (string $name) => Channel::create(['name' => $name]);
 
 ?>
 
-<div
-    class="flex w-full rounded-lg bg-fuchsia-800"
-    style="height: calc(100vh - 40px)"
->
+<div class="flex w-full rounded-lg bg-fuchsia-800" style="height: calc(100vh - 40px)">
     <!-- Channels -->
     <div class="shrink-0 overflow-y-scroll rounded-l-lg bg-sidebar">
         <div class="flex h-14 items-center gap-x-32 border-b p-4">
@@ -48,58 +45,38 @@ $createChannel = fn (string $name) => Channel::create(['name' => $name]);
                 </li>
             </ul>
 
-            <ul
-                class="flex flex-col gap-y-2"
-                x-data="channels"
-            >
+            <ul class="flex flex-col gap-y-2" x-data="channels">
                 <li class="flex flex-col">
                     <div class="flex">
-                        <button
-                            @click="open = !open"
-                            class="flex items-center gap-x-2 rounded-md px-4 py-1 hover:bg-white/30"
-                        >
+                        <button @click="open = !open"
+                            class="flex items-center gap-x-2 rounded-md px-4 py-1 hover:bg-white/30">
                             <x-icons.chevron-down class="h-3 w-3 text-gray-700" />
                         </button>
 
                         <button class="flex items-center justify-between w-full">
                             Channels
 
-                            <x-icons.plus
-                                x-show="!openChannelForm"
-                                class="h-5 w-5 text-gray-700"
-                                @click="openChannelForm = !openChannelForm" 
-                            />
+                            <x-icons.plus x-show="!openChannelForm" class="h-5 w-5 text-gray-700"
+                                @click="openChannelForm = !openChannelForm" />
 
-                            <x-icons.minus
-                                x-show="openChannelForm"
-                                class="h-5 w-5 text-gray-700"
-                                @click="openChannelForm = !openChannelForm" 
-                            />
+                            <x-icons.minus x-show="openChannelForm" class="h-5 w-5 text-gray-700"
+                                @click="openChannelForm = !openChannelForm" />
                         </button>
                     </div>
 
-                    <input
-                        x-show="openChannelForm"
-                        wire:model="name"
-                        type="text"
-                        class="w-full rounded-md border border-gray-300 px-3 py-1"
-                        placeholder="general"
-                        @keyup.enter="openChannelForm = false; $wire.createChannel($event.target.value)"
-                    />
-                </li>   
+                    <input x-show="openChannelForm" wire:model="name" type="text"
+                        class="w-full rounded-md border border-gray-300 px-3 py-1" placeholder="general"
+                        @keyup.enter="openChannelForm = false; $wire.createChannel($event.target.value)" />
+                </li>
 
                 <li>
                     <ul x-cloak x-show="open">
                         <template x-for="channel in $wire.channels">
                             <li>
-                                <a
-                                    :href="`/${channel.name}`"
+                                <a :href="`/${channel.name}`"
                                     class="flex items-center gap-x-2 rounded-md px-4 py-1 hover:bg-fuchsia-900 hover:text-white"
-                                    :class="{ 'bg-fuchsia-900 text-white': channel.name === '{{ $channel->name }}' }"
-                                >
-                                    <x-icons.hashtag
-                                        class="text:inherit h-4 w-4"
-                                    />
+                                    :class="{ 'bg-fuchsia-900 text-white': channel.name === '{{ $channel->name }}' }">
+                                    <x-icons.hashtag class="text:inherit h-4 w-4" />
 
                                     <span x-text="channel.name"></span>
                                 </a>
@@ -109,15 +86,10 @@ $createChannel = fn (string $name) => Channel::create(['name' => $name]);
                 </li>
             </ul>
 
-            <ul
-                class="flex flex-col gap-y-2"
-                x-data="{ open: true }"
-            >
+            <ul class="flex flex-col gap-y-2" x-data="{ open: true }">
                 <li>
-                    <button
-                        @click="open = !open"
-                        class="flex w-full items-center gap-x-2 rounded-md px-4 py-1 hover:bg-white/30"
-                    >
+                    <button @click="open = !open"
+                        class="flex w-full items-center gap-x-2 rounded-md px-4 py-1 hover:bg-white/30">
                         <x-icons.chevron-down class="h-3 w-3 text-gray-700" />
 
                         Direct messages
@@ -138,11 +110,8 @@ $createChannel = fn (string $name) => Channel::create(['name' => $name]);
             <div class="flex rounded border p-1" wire:ignore>
                 <div class="flex items-center -space-x-1">
                     @foreach ($subscribers->take(3) as $subscriber)
-                        <img
-                            src="{{ $subscriber->avatar }}"
-                            alt="{{ $subscriber->name }}"
-                            class="h-5 w-5 rounded-md border border-white"
-                        />
+                    <img src="{{ $subscriber->avatar }}" alt="{{ $subscriber->name }}"
+                        class="h-5 w-5 rounded-md border border-white" />
                     @endforeach
                 </div>
 
@@ -162,6 +131,13 @@ Alpine.data('channels', () => {
         open: true,
 
         openChannelForm: false,
+        init() {
+            Echo.join('workspace')
+                .listen('.ChannelCreated', (event) => {
+                    pr(event, 'Channel created');
+                    this.$wire.channels.push(event.model);
+                });
+        }
     }
 });
 </script>
